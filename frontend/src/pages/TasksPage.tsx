@@ -194,16 +194,37 @@ export const TasksPage: React.FC = () => {
       ) : tasks.length === 0 ? (
         <div className="py-16 text-center rounded-3xl bg-[#111726]/60 border border-white/10 p-8 space-y-3">
           <CheckSquare className="w-12 h-12 text-slate-500 mx-auto" />
-          <h3 className="text-base font-bold text-white">No tasks matching your filters</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Try resetting your status or category filters to explore other academic assignments.
-          </p>
-          <button
-            onClick={() => setSearchParams(new URLSearchParams())}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition"
-          >
-            Clear Filters
-          </button>
+          {statusFilter === 'all' && categoryFilter === 'all' && subjectFilter === 'all' && !searchQuery ? (
+            <>
+              <h3 className="text-base font-bold text-white">No tasks published yet</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                {user?.role === 'admin' || user?.role === 'faculty'
+                  ? 'Get started by publishing assignments, lab activities, or presentations for your students.'
+                  : 'Instructors have not posted coursework yet. Check back soon!'}
+              </p>
+              {(user?.role === 'admin' || user?.role === 'faculty') && (
+                <button
+                  onClick={() => setIsCreateTaskOpen(true)}
+                  className="mt-2 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-glow-violet transition"
+                >
+                  + Publish First Task
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <h3 className="text-base font-bold text-white">No tasks matching your filters</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Try resetting your status or category filters to explore other academic assignments.
+              </p>
+              <button
+                onClick={() => setSearchParams(new URLSearchParams())}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition"
+              >
+                Clear Filters
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

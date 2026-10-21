@@ -75,7 +75,7 @@ export const AchievementsPage: React.FC = () => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* Hero Level Progression Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-violet-950 via-[#111726] to-slate-900 border border-violet-500/30 shadow-2xl relative overflow-hidden">
+      <div className="p-6 sm:p-8 rounded-3xl bg-[#111726] border border-white/10 shadow-lg relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-400 via-yellow-400 to-amber-200 p-[2px] shadow-glow-gold shrink-0">
@@ -121,6 +121,14 @@ export const AchievementsPage: React.FC = () => {
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : achievements.length === 0 ? (
+          <div className="py-16 text-center rounded-3xl bg-[#111726]/60 border border-white/10 p-8 space-y-3">
+            <Award className="w-12 h-12 text-slate-500 mx-auto" />
+            <h3 className="text-base font-bold text-white">No academic achievements yet</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Submit assignments on-time, claim early bird podium bonuses, and keep daily streaks active to unlock achievements!
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

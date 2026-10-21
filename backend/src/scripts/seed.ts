@@ -12,6 +12,12 @@ import { AuditLog } from '../models/AuditLog';
 
 export const seedDatabase = async (): Promise<void> => {
   try {
+    if (process.env.NODE_ENV === 'production' && !process.argv.includes('--force-production-seed')) {
+      console.error('⛔ [SAFETY ABORT] Seed script execution is blocked in production to protect real university data.');
+      console.error('   CampusQuest production database must start clean.');
+      process.exit(1);
+    }
+
     await connectDB();
     console.log('[Seed] Connected to database. Clearing existing collections...');
 
@@ -122,12 +128,14 @@ export const seedDatabase = async (): Promise<void> => {
     const salt = await bcrypt.genSalt(10);
     const demoPasswordHash = await bcrypt.hash('Password@123', salt);
 
-    // 1. Admin/Faculty
+    // 1. Admin
     const adminUser = await User.create({
       name: 'Dr. Sarah Chen',
       email: 'teacher@campusquest.edu',
       passwordHash: demoPasswordHash,
       role: 'admin',
+      approvalStatus: 'approved',
+      facultyDesignation: 'Head of CSE Department',
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=faces',
       rollNumber: 'FAC-CSE-01',
       department: 'Computer Science & Engineering',
@@ -137,6 +145,48 @@ export const seedDatabase = async (): Promise<void> => {
       points: 0,
       xp: 0,
       level: 10,
+      streak: 0,
+      isDemoUser: true,
+    });
+
+    // 2. Approved Faculty
+    const approvedFaculty = await User.create({
+      name: 'Prof. Marcus Brody',
+      email: 'marcus.faculty@campusquest.edu',
+      passwordHash: demoPasswordHash,
+      role: 'faculty',
+      approvalStatus: 'approved',
+      facultyDesignation: 'Associate Professor',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=faces',
+      rollNumber: 'FAC-CSE-02',
+      department: 'Computer Science & Engineering',
+      year: 'Faculty',
+      section: 'Staff',
+      coins: 0,
+      points: 0,
+      xp: 0,
+      level: 5,
+      streak: 0,
+      isDemoUser: true,
+    });
+
+    // 3. Pending Faculty Applicant (For demonstration in Admin Approval Queue)
+    const pendingFaculty = await User.create({
+      name: 'Dr. Elena Rostova',
+      email: 'elena.pending@campusquest.edu',
+      passwordHash: demoPasswordHash,
+      role: 'faculty',
+      approvalStatus: 'pending',
+      facultyDesignation: 'Assistant Professor (Networks)',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=faces',
+      rollNumber: 'FAC-APPL-09',
+      department: 'Computer Science & Engineering',
+      year: 'Faculty Applicant',
+      section: 'Pending Verification',
+      coins: 0,
+      points: 0,
+      xp: 0,
+      level: 1,
       streak: 0,
       isDemoUser: true,
     });

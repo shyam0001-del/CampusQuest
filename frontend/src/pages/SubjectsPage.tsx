@@ -93,8 +93,22 @@ export const SubjectsPage: React.FC = () => {
           <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filteredSubjects.length === 0 ? (
-        <div className="text-center py-16 p-8 rounded-3xl bg-[#111726]/60 border border-white/10">
-          <p className="text-sm font-bold text-white">No subjects found</p>
+        <div className="text-center py-16 p-8 rounded-3xl bg-[#111726]/60 border border-white/10 space-y-3">
+          <BookOpen className="w-12 h-12 text-slate-500 mx-auto" />
+          <h3 className="text-base font-bold text-white">No courses created yet</h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            {user?.role === 'student'
+              ? 'Instructors have not added courses to your department yet. Check back soon!'
+              : 'Add your first subject to start enrolling students and creating assignments.'}
+          </p>
+          {(user?.role === 'admin' || user?.role === 'faculty') && (
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="mt-2 px-4 py-2 text-xs font-semibold rounded-xl bg-violet-600 hover:bg-violet-500 text-white transition"
+            >
+              + Create First Subject
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -104,11 +118,6 @@ export const SubjectsPage: React.FC = () => {
               to={`/subjects/${subj._id}`}
               className="p-6 rounded-3xl bg-[#111726] border border-white/10 hover:border-violet-500/40 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1 shadow-lg relative overflow-hidden"
             >
-              <div
-                className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl opacity-10 pointer-events-none"
-                style={{ backgroundColor: subj.color || '#8b5cf6' }}
-              />
-
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span

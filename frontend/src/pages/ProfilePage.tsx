@@ -79,38 +79,38 @@ export const ProfilePage: React.FC = () => {
       </div>
 
       {/* Profile Overview Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-[#111726] border border-white/10 shadow-2xl space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
+      <div className="p-4 sm:p-8 rounded-3xl bg-[#111726] border border-white/10 shadow-2xl space-y-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
             <img
               src={user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
               alt={user?.name}
-              className="w-20 h-20 rounded-2xl ring-2 ring-violet-500/40 shadow-glow-violet object-cover bg-violet-950"
+              className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl ring-2 ring-violet-500/40 shadow-glow-violet object-cover bg-violet-950 shrink-0"
             />
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 uppercase">
+                <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 uppercase">
                   {user?.role}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">{user?.rollNumber}</span>
+                <span className="text-[11px] sm:text-xs text-slate-400 font-mono">{user?.rollNumber}</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white mt-1">{user?.name}</h2>
-              <p className="text-xs text-slate-400">{user?.email}</p>
+              <h2 className="text-lg sm:text-2xl font-black text-white mt-1 truncate">{user?.name}</h2>
+              <p className="text-xs text-slate-400 truncate">{user?.email}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center min-w-[90px]">
-              <p className="text-xs text-slate-400 font-semibold">Coins</p>
-              <p className="text-lg font-black text-amber-400 mt-0.5">{user?.coins || 0}</p>
+          <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
+            <div className="p-2.5 sm:p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center min-w-0 sm:min-w-[85px]">
+              <p className="text-[10px] sm:text-xs text-slate-400 font-semibold">Coins</p>
+              <p className="text-base sm:text-lg font-black text-amber-400 mt-0.5">{user?.coins || 0}</p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-center min-w-[90px]">
-              <p className="text-xs text-slate-400 font-semibold">Level</p>
-              <p className="text-lg font-black text-violet-400 mt-0.5">{user?.level || 1}</p>
+            <div className="p-2.5 sm:p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-center min-w-0 sm:min-w-[85px]">
+              <p className="text-[10px] sm:text-xs text-slate-400 font-semibold">Level</p>
+              <p className="text-base sm:text-lg font-black text-violet-400 mt-0.5">{user?.level || 1}</p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center min-w-[90px]">
-              <p className="text-xs text-slate-400 font-semibold">Streak</p>
-              <p className="text-lg font-black text-rose-400 mt-0.5">{user?.streak || 0}d</p>
+            <div className="p-2.5 sm:p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center min-w-0 sm:min-w-[85px]">
+              <p className="text-[10px] sm:text-xs text-slate-400 font-semibold">Streak</p>
+              <p className="text-base sm:text-lg font-black text-rose-400 mt-0.5">{user?.streak || 0}d</p>
             </div>
           </div>
         </div>

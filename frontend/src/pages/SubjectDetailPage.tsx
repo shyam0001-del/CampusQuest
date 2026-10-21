@@ -213,6 +213,7 @@ export const SubjectDetailPage: React.FC = () => {
         onClose={() => setIsCreateTaskOpen(false)}
         onSuccess={() => fetchSubjectDetails()}
         defaultSubjectId={subject._id}
+        defaultSubjectName={subject.name}
       />
     </div>
   );

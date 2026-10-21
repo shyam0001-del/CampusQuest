@@ -60,7 +60,14 @@ export const SubmitWorkModal: React.FC<SubmitWorkModalProps> = ({
           setSubmitting(false);
           return;
         }
-        if (file) formData.append('file', file);
+        if (file) {
+          if (file.size > 25 * 1024 * 1024) {
+            setError(`File "${file.name}" exceeds the 25MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select a smaller file.`);
+            setSubmitting(false);
+            return;
+          }
+          formData.append('file', file);
+        }
       } else if (activeTab === 'url') {
         if (!submissionUrl.trim()) {
           setError('Please enter a valid submission URL');
@@ -103,7 +110,7 @@ export const SubmitWorkModal: React.FC<SubmitWorkModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
@@ -111,20 +118,21 @@ export const SubmitWorkModal: React.FC<SubmitWorkModalProps> = ({
         />
 
         {/* Modal Dialog */}
-        <div className="relative w-full max-w-lg rounded-3xl bg-[#111726] border border-white/10 p-6 sm:p-8 shadow-2xl z-10 max-h-[90vh] overflow-y-auto">
+        <div className="relative w-full max-w-lg rounded-3xl bg-[#111726] border border-white/10 p-4 sm:p-8 shadow-2xl z-10 max-h-[90vh] overflow-y-auto">
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/5 transition"
+            aria-label="Close modal"
+            className="absolute top-4 sm:top-5 right-4 sm:right-5 p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/5 transition min-h-[38px] min-w-[38px] flex items-center justify-center"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-5 sm:mb-6 pr-6">
             <span className="text-[11px] font-bold text-violet-400 uppercase tracking-wider">
               {task.subject?.name || 'Academic Submission'}
             </span>
-            <h3 className="text-lg sm:text-xl font-extrabold text-white mt-1">
+            <h3 className="text-base sm:text-xl font-extrabold text-white mt-1">
               Submit: {task.title}
             </h3>
             <p className="text-xs text-slate-400 mt-1 line-clamp-2">
@@ -137,10 +145,10 @@ export const SubmitWorkModal: React.FC<SubmitWorkModalProps> = ({
             <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
               <Zap className="w-5 h-5" />
             </div>
-            <div className="text-xs">
+            <div className="text-xs min-w-0">
               <p className="font-bold text-amber-300">Early Submission Bonus Active!</p>
               <p className="text-[11px] text-slate-300 mt-0.5">
-                Earn <span className="font-semibold text-white">+{task.bonusRules?.firstBonus || 50} coins</span> if you are the 1st submitter, or +{task.bonusRules?.secondBonus || 35} / +{task.bonusRules?.thirdBonus || 20} coins for 2nd & 3rd place!
+                Earn <span className="font-semibold text-white">+{task.bonusRules?.firstBonus || 50} coins</span> for 1st submitter, or +{task.bonusRules?.secondBonus || 35} / +{task.bonusRules?.thirdBonus || 20} coins for 2nd & 3rd!
               </p>
             </div>
           </div>
@@ -153,42 +161,42 @@ export const SubmitWorkModal: React.FC<SubmitWorkModalProps> = ({
           )}
 
           {/* Submission Mode Tabs */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-900 border border-white/5 mb-5 text-xs font-semibold">
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-900 border border-white/5 mb-5 text-[11px] sm:text-xs font-semibold">
             <button
               type="button"
               onClick={() => setActiveTab('file')}
-              className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition ${
+              className={`py-2 rounded-lg flex items-center justify-center gap-1 sm:gap-1.5 transition min-h-[38px] ${
                 activeTab === 'file'
                   ? 'bg-violet-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Upload className="w-3.5 h-3.5" />
-              <span>File Upload</span>
+              <Upload className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate"><span className="hidden xs:inline">File </span>Upload</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('url')}
-              className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition ${
+              className={`py-2 rounded-lg flex items-center justify-center gap-1 sm:gap-1.5 transition min-h-[38px] ${
                 activeTab === 'url'
                   ? 'bg-violet-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <LinkIcon className="w-3.5 h-3.5" />
-              <span>External URL</span>
+              <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate"><span className="hidden xs:inline">External </span>Link</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('text')}
-              className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition ${
+              className={`py-2 rounded-lg flex items-center justify-center gap-1 sm:gap-1.5 transition min-h-[38px] ${
                 activeTab === 'text'
                   ? 'bg-violet-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Text / Code</span>
+              <FileText className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Text<span className="hidden xs:inline"> / Code</span></span>
             </button>
           </div>
 
@@ -206,7 +214,14 @@ export const SubmitWorkModal: React.FC<SubmitWorkModalProps> = ({
                     className="hidden"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setFile(e.target.files[0]);
+                        const selectedFile = e.target.files[0];
+                        if (selectedFile.size > 25 * 1024 * 1024) {
+                          setError(`File "${selectedFile.name}" exceeds the 25MB limit (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB). Please select a file under 25MB.`);
+                          setFile(null);
+                          return;
+                        }
+                        setError(null);
+                        setFile(selectedFile);
                       }
                     }}
                   />

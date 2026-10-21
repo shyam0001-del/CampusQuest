@@ -1,8 +1,11 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { ENV } from '../config/env';
 
-const uploadDir = path.join(process.cwd(), 'uploads');
+const uploadDir = path.isAbsolute(ENV.UPLOAD_DIR)
+  ? ENV.UPLOAD_DIR
+  : path.join(process.cwd(), ENV.UPLOAD_DIR);
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -22,7 +25,7 @@ const storage = multer.diskStorage({
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 25 * 1024 * 1024, // 25 MB max limit
+    fileSize: 25 * 1024 * 1024 + 1024, // 25 MB max limit (+ framing buffer to prevent premature boundary truncation)
   },
   fileFilter: (_req, file, cb) => {
     // Allowed extensions: pdf, docs, archives, images, text, code

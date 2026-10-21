@@ -8,7 +8,8 @@ export const Layout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0d17] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#070a13] text-slate-100 relative overflow-x-hidden selection:bg-violet-500 selection:text-white">
+
       <Navbar
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -16,7 +17,7 @@ export const Layout: React.FC = () => {
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         <Sidebar />
         <MobileNav isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-y-auto">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 min-w-0 overflow-y-auto">
           <Outlet />
         </main>
       </div>

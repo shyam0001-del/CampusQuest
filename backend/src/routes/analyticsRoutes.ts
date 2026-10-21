@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { getDashboardStats } from '../controllers/analyticsController';
-import { optionalAuth } from '../middleware/authMiddleware';
+import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get('/dashboard', optionalAuth, getDashboardStats);
+router.get('/dashboard', protect, getDashboardStats);
 
 export default router;

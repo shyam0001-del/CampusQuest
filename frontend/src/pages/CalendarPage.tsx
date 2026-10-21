@@ -210,22 +210,24 @@ export const CalendarPage: React.FC = () => {
       </div>
 
       {/* Interactive Monthly Calendar View */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-[#111726] border border-white/10 shadow-2xl space-y-6">
+      <div className="p-4 sm:p-8 rounded-3xl bg-[#111726] border border-white/10 shadow-2xl space-y-4 sm:space-y-6">
         {/* Month Navigation */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-black text-white">
+          <h2 className="text-base sm:text-xl font-black text-white">
             {monthNames[month]} {year}
           </h2>
           <div className="flex items-center gap-2">
             <button
               onClick={prevMonth}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition"
+              aria-label="Previous month"
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition min-h-[38px] min-w-[38px] flex items-center justify-center"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={nextMonth}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition"
+              aria-label="Next month"
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition min-h-[38px] min-w-[38px] flex items-center justify-center"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -235,8 +237,9 @@ export const CalendarPage: React.FC = () => {
         {/* Days of Week Header */}
         <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs font-bold text-slate-400">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="py-2">
-              {d}
+            <div key={d} className="py-1 sm:py-2">
+              <span className="hidden sm:inline">{d}</span>
+              <span className="sm:hidden">{d[0]}</span>
             </div>
           ))}
         </div>
@@ -245,7 +248,7 @@ export const CalendarPage: React.FC = () => {
         <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {/* Empty cells before 1st of month */}
           {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-            <div key={`empty-${i}`} className="min-h-[80px] sm:min-h-[100px] rounded-2xl bg-slate-950/20 border border-transparent" />
+            <div key={`empty-${i}`} className="min-h-[52px] sm:min-h-[100px] rounded-xl sm:rounded-2xl bg-slate-950/20 border border-transparent" />
           ))}
 
           {/* Days of current month */}
@@ -260,7 +263,7 @@ export const CalendarPage: React.FC = () => {
             return (
               <div
                 key={dayNum}
-                className={`min-h-[80px] sm:min-h-[100px] p-2 rounded-2xl border transition flex flex-col justify-between ${
+                className={`min-h-[52px] sm:min-h-[100px] p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border transition flex flex-col justify-between ${
                   isToday
                     ? 'bg-violet-950/30 border-violet-500/50 shadow-glow-violet'
                     : 'bg-slate-900/60 border-white/5 hover:border-white/20'
@@ -268,19 +271,28 @@ export const CalendarPage: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-xs font-bold ${
-                      isToday ? 'text-violet-400' : 'text-slate-400'
+                    className={`text-[11px] sm:text-xs font-bold ${
+                      isToday ? 'text-violet-400 font-extrabold' : 'text-slate-400'
                     }`}
                   >
                     {dayNum}
                   </span>
                   {dayTasks.length > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 animate-pulse" />
                   )}
                 </div>
 
-                {/* Tasks inside day cell */}
-                <div className="space-y-1 mt-1 overflow-hidden">
+                {/* Mobile compact indicator */}
+                {dayTasks.length > 0 && (
+                  <div className="sm:hidden mt-0.5">
+                    <span className="block text-center text-[9px] font-bold px-1 py-0.2 rounded bg-violet-600/40 text-violet-200">
+                      {dayTasks.length}
+                    </span>
+                  </div>
+                )}
+
+                {/* Tablet & Desktop Tasks inside day cell */}
+                <div className="hidden sm:block space-y-1 mt-1 overflow-hidden">
                   {dayTasks.slice(0, 2).map((t) => (
                     <Link
                       key={t._id}

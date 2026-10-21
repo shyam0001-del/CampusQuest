@@ -170,6 +170,12 @@ export const updateSubject = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
+    // SCOPE CHECK: Admins can update any subject. Faculty can only update subjects they created.
+    if (req.user?.role !== 'admin' && subject.createdBy.toString() !== req.user?._id.toString()) {
+      res.status(403).json({ success: false, message: 'Access denied: You can only edit subjects created by your faculty account' });
+      return;
+    }
+
     if (name) subject.name = name;
     if (code) subject.code = code.toUpperCase();
     if (description !== undefined) subject.description = description;
@@ -202,6 +208,12 @@ export const toggleArchiveSubject = async (req: AuthRequest, res: Response): Pro
     const subject = await Subject.findById(id);
     if (!subject) {
       res.status(404).json({ success: false, message: 'Subject not found' });
+      return;
+    }
+
+    // SCOPE CHECK: Admins can archive any subject. Faculty can only archive their own.
+    if (req.user?.role !== 'admin' && subject.createdBy.toString() !== req.user?._id.toString()) {
+      res.status(403).json({ success: false, message: 'Access denied: You can only archive subjects created by your faculty account' });
       return;
     }
 

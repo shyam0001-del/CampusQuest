@@ -20,7 +20,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({
   const [department, setDepartment] = useState('Computer Science & Engineering');
   const [section, setSection] = useState('Section A');
   const [csvText, setCsvText] = useState(
-    'RollNumber,Name,Email,Department,Section\nCQ-2026-101,Jordan Lee,jordan@campusquest.edu,Computer Science & Engineering,Section A\nCQ-2026-102,Samira Khan,samira@campusquest.edu,Computer Science & Engineering,Section B'
+    'RollNumber,Name,Email,Department,Section\nCQ-2026-101,Jordan Lee,jordan@university.edu,Computer Science & Engineering,Section A\nCQ-2026-102,Samira Khan,samira@university.edu,Computer Science & Engineering,Section B'
   );
 
   const [loading, setLoading] = useState(false);
@@ -173,7 +173,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jordan@campusquest.edu"
+                  placeholder="jordan@university.edu"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500"
                 />
               </div>

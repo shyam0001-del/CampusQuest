@@ -15,9 +15,12 @@ import {
   Menu,
   X,
   ExternalLink,
+  UserCog,
+  Palette,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme, Theme } from '../../context/ThemeContext';
 import { api } from '../../lib/api';
 import { NotificationItem } from '../../types';
 
@@ -28,17 +31,19 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenuOpen }) => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -54,6 +59,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
       }
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setShowUserMenu(false);
+      }
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setShowThemeMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -93,27 +101,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#0a0d17]/85 border-b border-white/[0.08] transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Brand Logo & Mobile Trigger */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onToggleMobileMenu}
-            className="p-2 rounded-lg lg:hidden text-slate-300 hover:text-white hover:bg-white/5 transition"
+            className="p-2 rounded-xl lg:hidden text-slate-300 hover:text-white hover:bg-white/5 transition min-h-[40px] min-w-[40px] flex items-center justify-center"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-violet-500 to-cyan-400 p-[2px] shadow-glow-violet transition-transform group-hover:scale-105">
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-violet-500 to-cyan-400 p-[2px] shadow-glow-violet transition-transform group-hover:scale-105 shrink-0">
               <div className="w-full h-full bg-[#0d121f] rounded-[10px] flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
+                <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                  Campus<span className="text-violet-400">Quest</span>
+                <span className="font-extrabold text-base sm:text-lg tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  Campus<span className="text-violet-500">Quest</span>
                 </span>
                 <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-semibold bg-violet-500/15 border border-violet-500/30 text-violet-300 rounded-full">
                   v2.0
@@ -144,26 +152,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
         </form>
 
         {/* Right: Gamification Badges & User Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {user && user.role === 'student' && (
             <>
               {/* Coin Balance Pill */}
               <div
                 title="Gold Coins: Earn by submitting on-time and grabbing early podium bonuses!"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm font-bold shadow-glow-gold transition hover:scale-105 cursor-pointer"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm font-bold shadow-glow-gold transition hover:scale-105 cursor-pointer"
                 onClick={() => navigate('/profile')}
               >
-                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 font-black text-[11px] shadow-sm animate-pulse-slow">
-                  <Coins className="w-3.5 h-3.5 text-amber-950" />
+                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 font-black text-[10px] sm:text-[11px] shadow-sm animate-pulse-slow shrink-0">
+                  <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-950" />
                 </div>
                 <span>{user.coins}</span>
                 <span className="hidden lg:inline text-[11px] font-normal text-amber-400/80">coins</span>
               </div>
 
-              {/* Streak Badge */}
+              {/* Streak Badge (hidden on smallest screens to preserve layout) */}
               <div
                 title={`${user.streak}-day streak! Submit tasks consistently to keep your fire lit.`}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs sm:text-sm font-semibold transition hover:scale-105"
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs sm:text-sm font-semibold transition hover:scale-105"
               >
                 <Flame className="w-4 h-4 text-rose-500 fill-rose-500" />
                 <span>{user.streak}</span>
@@ -172,14 +180,71 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
             </>
           )}
 
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-200" />}
-          </button>
+          {/* Theme Selector (Exactly 3 Options: Black, White, Default) */}
+          <div className="relative" ref={themeMenuRef}>
+            <button
+              onClick={() => setShowThemeMenu(!showThemeMenu)}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition flex items-center gap-1.5 text-xs font-semibold"
+              aria-label="Theme selector"
+              aria-expanded={showThemeMenu}
+              id="theme-selector-btn"
+            >
+              <Palette className="w-4 h-4 text-violet-400" />
+              <span className="hidden sm:inline capitalize">{theme}</span>
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+
+            {showThemeMenu && (
+              <div
+                className="absolute right-0 mt-2 w-44 rounded-2xl bg-[#111726] border border-white/10 shadow-2xl overflow-hidden z-50 p-1.5 animate-in fade-in slide-in-from-top-2 duration-150"
+                role="menu"
+                aria-orientation="vertical"
+              >
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Select Theme
+                </div>
+                {(
+                  [
+                    {
+                      id: 'default' as Theme,
+                      label: 'Default',
+                      colorBg: 'bg-[#F3F4F6] border-slate-400',
+                    },
+                    {
+                      id: 'white' as Theme,
+                      label: 'White',
+                      colorBg: 'bg-[#FFFFFF] border-slate-300 shadow-sm',
+                    },
+                    {
+                      id: 'black' as Theme,
+                      label: 'Black',
+                      colorBg: 'bg-[#000000] border-neutral-700',
+                    },
+                  ]
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      setTheme(opt.id);
+                      setShowThemeMenu(false);
+                    }}
+                    role="menuitem"
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                      theme === opt.id
+                        ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={`w-3.5 h-3.5 rounded-full border ${opt.colorBg}`} />
+                      <span>{opt.label}</span>
+                    </div>
+                    {theme === opt.id && <Check className="w-3.5 h-3.5 text-violet-400" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Notifications Dropdown */}
           {user && (
@@ -199,7 +264,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
               </button>
 
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-[#111726] border border-white/10 shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-[-10px] sm:right-0 mt-2 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl bg-[#111726] border border-white/10 shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="p-3.5 bg-slate-900/80 border-b border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm text-slate-100">Notifications</span>
@@ -263,12 +328,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 p-1 pl-2 rounded-xl border border-white/10 hover:border-white/20 bg-slate-900/50 hover:bg-slate-900/80 transition"
+                className="flex items-center gap-1.5 sm:gap-2 p-1 pl-1.5 sm:pl-2 rounded-xl border border-white/10 hover:border-white/20 bg-slate-900/50 hover:bg-slate-900/80 transition"
               >
                 <img
                   src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
                   alt={user.name}
-                  className="w-7 h-7 rounded-lg object-cover bg-violet-500/20 ring-1 ring-violet-500/40"
+                  className="w-7 h-7 rounded-lg object-cover bg-violet-500/20 ring-1 ring-violet-500/40 shrink-0"
                 />
                 <div className="text-left hidden lg:block leading-tight">
                   <p className="text-xs font-semibold text-slate-200 truncate max-w-[100px]">{user.name}</p>
@@ -278,7 +343,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#111726] border border-white/10 shadow-2xl overflow-hidden z-50">
+                <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-[#111726] border border-white/10 shadow-2xl overflow-hidden z-50">
                   <div className="p-3 bg-slate-900/80 border-b border-white/5">
                     <p className="text-xs font-bold text-slate-100">{user.name}</p>
                     <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
@@ -300,14 +365,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, isMobileMenu
                       My Profile & Ledger
                     </Link>
 
-                    {user.role === 'admin' && (
+                    {(user.role === 'admin' || user.role === 'faculty') && (
                       <Link
                         to="/admin"
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2.5 px-3 py-2 text-xs text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-xl transition"
                       >
                         <Shield className="w-4 h-4 text-amber-400" />
-                        Admin Dashboard
+                        {user.role === 'admin' ? 'Admin Dashboard' : 'Faculty Course Hub'}
+                      </Link>
+                    )}
+
+                    {user.role === 'admin' && (
+                      <Link
+                        to="/admin?tab=users"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-violet-300 hover:text-violet-200 hover:bg-violet-500/10 rounded-xl transition"
+                      >
+                        <UserCog className="w-4 h-4 text-violet-400" />
+                        User Management
                       </Link>
                     )}
 

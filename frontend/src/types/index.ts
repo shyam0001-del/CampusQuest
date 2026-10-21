@@ -1,8 +1,15 @@
+export type UserRole = 'student' | 'faculty' | 'admin';
+export type ApprovalStatus = 'approved' | 'pending' | 'rejected';
+
 export interface User {
   id: string;
+  _id?: string;
   name: string;
   email: string;
-  role: 'student' | 'admin';
+  role: UserRole;
+  approvalStatus: ApprovalStatus;
+  facultyDesignation?: string;
+  rejectionReason?: string;
   avatar: string;
   rollNumber: string;
   department: string;
@@ -16,6 +23,11 @@ export interface User {
   targetWeeklyTasks: number;
   targetCoinGoal: number;
   rank?: number | null;
+  isActive?: boolean;
+  deactivatedAt?: string;
+  deactivationReason?: string;
+  deactivatedBy?: { name: string; email: string };
+  createdAt?: string;
 }
 
 export type TaskCategory =

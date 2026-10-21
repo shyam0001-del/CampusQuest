@@ -1,15 +1,91 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
+import { Types } from 'mongoose';
 import { User } from '../models/User';
 import { Subject } from '../models/Subject';
+import { Submission } from '../models/Submission';
+import { CoinTransaction } from '../models/CoinTransaction';
 import { AuditLog } from '../models/AuditLog';
 import { AuthRequest } from '../middleware/authMiddleware';
 
+/**
+ * ADMIN ONLY: Get all registered users (students, faculty, administrators)
+ * Excludes password hashes and secrets. Queries active MongoDB Atlas database.
+ */
+export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { search, role, status, accountStatus } = req.query;
+
+    const query: any = {};
+
+    if (search && typeof search === 'string') {
+      const term = search.trim();
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { email: { $regex: term, $options: 'i' } },
+        { rollNumber: { $regex: term, $options: 'i' } },
+        { facultyDesignation: { $regex: term, $options: 'i' } },
+        { department: { $regex: term, $options: 'i' } },
+      ];
+    }
+
+    if (role && role !== 'all') {
+      query.role = role;
+    }
+
+    if (status && status !== 'all') {
+      query.approvalStatus = status;
+    }
+
+    if (accountStatus === 'active') {
+      query.isActive = { $ne: false };
+    } else if (accountStatus === 'deactivated') {
+      query.isActive = false;
+    }
+
+    const users = await User.find(query)
+      .select('-passwordHash')
+      .populate('deactivatedBy', 'name email role')
+      .sort({ createdAt: -1 });
+
+    const total = await User.countDocuments(query);
+
+    // Summary statistics for admin overview
+    const [totalStudents, activeStudents, deactivatedStudents, totalFaculty, totalAdmins] = await Promise.all([
+      User.countDocuments({ role: 'student' }),
+      User.countDocuments({ role: 'student', isActive: { $ne: false } }),
+      User.countDocuments({ role: 'student', isActive: false }),
+      User.countDocuments({ role: 'faculty' }),
+      User.countDocuments({ role: 'admin' }),
+    ]);
+
+    res.json({
+      success: true,
+      users,
+      total,
+      stats: {
+        totalUsers: totalStudents + totalFaculty + totalAdmins,
+        totalStudents,
+        activeStudents,
+        deactivatedStudents,
+        totalFaculty,
+        totalAdmins,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error fetching registered users' });
+  }
+};
+
 export const getAllStudents = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { search, department, section, page = 1, limit = 100 } = req.query;
+    const { search, department, section, includeInactive, page = 1, limit = 100 } = req.query;
 
     const query: any = { role: 'student' };
+
+    if (includeInactive !== 'true') {
+      query.isActive = { $ne: false };
+    }
 
     if (search) {
       query.$or = [
@@ -222,5 +298,185 @@ export const getAuditLogs = async (req: AuthRequest, res: Response): Promise<voi
     res.json({ success: true, logs });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error fetching audit logs' });
+  }
+};
+
+/**
+ * ADMIN ONLY: Safely remove / deactivate a student account.
+ * Reversibly marks account as isActive: false, unenrolls student from active Subject rosters,
+ * preserves all historical academic Submissions and CoinTransactions for audit compliance,
+ * and records an auditable entry in AuditLog.
+ */
+export const removeStudent = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Administrator privileges required' });
+      return;
+    }
+
+    const { id } = req.params;
+
+    if (!id || !Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid student ID format' });
+      return;
+    }
+
+    // Prevent self-deletion
+    if (req.user._id.toString() === id) {
+      res.status(400).json({ success: false, message: 'Administrators cannot remove their own account' });
+      return;
+    }
+
+    const targetUser = await User.findById(id);
+    if (!targetUser) {
+      res.status(404).json({ success: false, message: 'Student account not found' });
+      return;
+    }
+
+    // Only allow student role removal through this endpoint
+    if (targetUser.role !== 'student') {
+      res.status(403).json({
+        success: false,
+        message: `Only student accounts can be removed via this endpoint. Target user has role '${targetUser.role}'.`,
+      });
+      return;
+    }
+
+    if (targetUser.isActive === false) {
+      res.status(400).json({
+        success: false,
+        message: 'Student account has already been deactivated/removed',
+      });
+      return;
+    }
+
+    // Determine related records for audit preservation
+    const submissionCount = await Submission.countDocuments({ student: targetUser._id });
+    const transactionCount = await CoinTransaction.countDocuments({ student: targetUser._id });
+
+    // Clean up active course enrollments so class rosters/stats do not retain broken references
+    const unenrollResult = await Subject.updateMany(
+      { enrolledStudents: targetUser._id },
+      { $pull: { enrolledStudents: targetUser._id } }
+    );
+
+    const deactivationReason = req.body?.reason?.trim() || 'Removed by administrator in User Management';
+
+    // Perform reversible deactivation
+    targetUser.isActive = false;
+    targetUser.deactivatedAt = new Date();
+    targetUser.deactivatedBy = req.user._id;
+    targetUser.deactivationReason = deactivationReason;
+    await targetUser.save();
+
+    // Create Audit Log
+    await AuditLog.create({
+      action: 'STUDENT_ACCOUNT_REMOVED',
+      performedBy: req.user._id,
+      targetType: 'User',
+      targetId: targetUser._id.toString(),
+      details: {
+        studentName: targetUser.name,
+        studentEmail: targetUser.email,
+        rollNumber: targetUser.rollNumber,
+        department: targetUser.department,
+        submissionsPreserved: submissionCount,
+        coinTransactionsPreserved: transactionCount,
+        subjectsUnenrolledCount: unenrollResult.modifiedCount,
+        reason: deactivationReason,
+        deactivatedAt: targetUser.deactivatedAt,
+      },
+      ip: req.ip || '',
+      timestamp: new Date(),
+    });
+
+    res.json({
+      success: true,
+      message: `Student account for ${targetUser.name} (${targetUser.email}) removed successfully. ${submissionCount} submission records and ${transactionCount} reward ledger transactions were safely preserved for institutional audit trails.`,
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        isActive: false,
+        deactivatedAt: targetUser.deactivatedAt,
+      },
+      preserved: {
+        submissions: submissionCount,
+        coinTransactions: transactionCount,
+        unenrolledSubjects: unenrollResult.modifiedCount,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error removing student account' });
+  }
+};
+
+/**
+ * ADMIN ONLY: Reactivate a previously deactivated student account.
+ */
+export const reactivateStudent = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Administrator privileges required' });
+      return;
+    }
+
+    const { id } = req.params;
+
+    if (!id || !Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid student ID format' });
+      return;
+    }
+
+    const targetUser = await User.findById(id);
+    if (!targetUser) {
+      res.status(404).json({ success: false, message: 'Student account not found' });
+      return;
+    }
+
+    if (targetUser.role !== 'student') {
+      res.status(403).json({ success: false, message: 'Only student accounts can be reactivated' });
+      return;
+    }
+
+    if (targetUser.isActive !== false) {
+      res.status(400).json({ success: false, message: 'Student account is already active' });
+      return;
+    }
+
+    targetUser.isActive = true;
+    targetUser.deactivatedAt = undefined;
+    targetUser.deactivatedBy = undefined;
+    targetUser.deactivationReason = undefined;
+    await targetUser.save();
+
+    await AuditLog.create({
+      action: 'STUDENT_ACCOUNT_REACTIVATED',
+      performedBy: req.user._id,
+      targetType: 'User',
+      targetId: targetUser._id.toString(),
+      details: {
+        studentName: targetUser.name,
+        studentEmail: targetUser.email,
+        rollNumber: targetUser.rollNumber,
+      },
+      ip: req.ip || '',
+      timestamp: new Date(),
+    });
+
+    res.json({
+      success: true,
+      message: `Student account for ${targetUser.name} (${targetUser.email}) reactivated successfully.`,
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        isActive: true,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error reactivating student account' });
   }
 };

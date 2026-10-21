@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import { Types, ClientSession } from 'mongoose';
 import { User, IUser } from '../models/User';
 import { Task, ITask } from '../models/Task';
 import { Submission } from '../models/Submission';
@@ -21,14 +21,21 @@ export interface RewardCalculationResult {
 export const processSubmissionReward = async (
   studentId: Types.ObjectId | string,
   taskId: Types.ObjectId | string,
-  serverTimestamp: Date = new Date()
+  serverTimestamp: Date = new Date(),
+  session: ClientSession | null = null
 ): Promise<RewardCalculationResult> => {
-  const task = await Task.findById(taskId);
+  const taskQuery = Task.findById(taskId);
+  if (session) taskQuery.session(session);
+  const task = await taskQuery;
+
   if (!task) {
     throw new Error('Task not found');
   }
 
-  const student = await User.findById(studentId);
+  const studentQuery = User.findById(studentId);
+  if (session) studentQuery.session(session);
+  const student = await studentQuery;
+
   if (!student) {
     throw new Error('Student not found');
   }
@@ -44,12 +51,15 @@ export const processSubmissionReward = async (
     const penaltyPct = task.bonusRules?.latePenaltyPct ?? 50;
     baseCoins = Math.max(10, Math.round(baseCoins * (1 - penaltyPct / 100)));
   } else {
-    // 2. Determine Early Bird Bonus with atomic count of prior on-time submissions for this task
-    const priorSubmissionsCount = await Submission.countDocuments({
-      task: task._id,
-      student: { $ne: student._id },
-      isLate: false,
-    });
+    // 2. Determine Early Bird Bonus with count of prior on-time submissions for this task
+    const priorSubmissionsCount = await Submission.countDocuments(
+      {
+        task: task._id,
+        student: { $ne: student._id },
+        isLate: false,
+      },
+      session ? { session } : undefined
+    );
 
     if (priorSubmissionsCount === 0) {
       bonusRank = 1;
@@ -108,49 +118,92 @@ export const processSubmissionReward = async (
         level: newLevel,
       },
     },
-    { new: true }
+    { new: true, session: session || undefined }
   );
 
   const newBalance = updatedStudent?.coins || student.coins + totalCoins;
 
   // 5. Create Auditable Coin Transactions
-  await CoinTransaction.create({
-    student: student._id,
-    task: task._id,
-    amount: baseCoins,
-    type: 'base_reward',
-    reason: `Submission completed: "${task.title}"${isLate ? ' (Late)' : ''}`,
-    balanceAfter: newBalance - bonusCoins,
-  });
+  if (session) {
+    await CoinTransaction.create(
+      [
+        {
+          student: student._id,
+          task: task._id,
+          amount: baseCoins,
+          type: 'base_reward',
+          reason: `Submission completed: "${task.title}"${isLate ? ' (Late)' : ''}`,
+          balanceAfter: newBalance - bonusCoins,
+        },
+      ],
+      { session }
+    );
 
-  if (bonusCoins > 0 && bonusRank) {
-    const rankLabels = ['1st', '2nd', '3rd'];
+    if (bonusCoins > 0 && bonusRank) {
+      const rankLabels = ['1st', '2nd', '3rd'];
+      await CoinTransaction.create(
+        [
+          {
+            student: student._id,
+            task: task._id,
+            amount: bonusCoins,
+            type: 'early_bird_bonus',
+            reason: `Early Bird Podium Bonus (${rankLabels[bonusRank - 1]} submitter): "${task.title}"`,
+            balanceAfter: newBalance,
+          },
+        ],
+        { session }
+      );
+    }
+
+    // 6. Send Reward Notification
+    await Notification.create(
+      [
+        {
+          user: student._id,
+          title: bonusRank
+            ? `🎉 Submission Reward + ${bonusRank === 1 ? '🥇 1st' : bonusRank === 2 ? '🥈 2nd' : '🥉 3rd'} Place Bonus!`
+            : '🎉 Submission Reward Earned!',
+          message: `You earned ${totalCoins} coins (${baseCoins} base${bonusCoins ? ` + ${bonusCoins} bonus` : ''}) for submitting "${task.title}".`,
+          type: 'reward_earned',
+          link: `/tasks/${task._id}`,
+        },
+      ],
+      { session }
+    );
+  } else {
     await CoinTransaction.create({
       student: student._id,
       task: task._id,
-      amount: bonusCoins,
-      type: 'early_bird_bonus',
-      reason: `Early Bird Podium Bonus (${rankLabels[bonusRank - 1]} submitter): "${task.title}"`,
-      balanceAfter: newBalance,
+      amount: baseCoins,
+      type: 'base_reward',
+      reason: `Submission completed: "${task.title}"${isLate ? ' (Late)' : ''}`,
+      balanceAfter: newBalance - bonusCoins,
+    });
+
+    if (bonusCoins > 0 && bonusRank) {
+      const rankLabels = ['1st', '2nd', '3rd'];
+      await CoinTransaction.create({
+        student: student._id,
+        task: task._id,
+        amount: bonusCoins,
+        type: 'early_bird_bonus',
+        reason: `Early Bird Podium Bonus (${rankLabels[bonusRank - 1]} submitter): "${task.title}"`,
+        balanceAfter: newBalance,
+      });
+    }
+
+    // 6. Send Reward Notification
+    await Notification.create({
+      user: student._id,
+      title: bonusRank
+        ? `🎉 Submission Reward + ${bonusRank === 1 ? '🥇 1st' : bonusRank === 2 ? '🥈 2nd' : '🥉 3rd'} Place Bonus!`
+        : '🎉 Submission Reward Earned!',
+      message: `You earned ${totalCoins} coins (${baseCoins} base${bonusCoins ? ` + ${bonusCoins} bonus` : ''}) for submitting "${task.title}".`,
+      type: 'reward_earned',
+      link: `/tasks/${task._id}`,
     });
   }
-
-  // 6. Send Reward Notification
-  await Notification.create({
-    user: student._id,
-    title: bonusRank ? `🎉 Submission Reward + ${bonusRank === 1 ? '🥇 1st' : bonusRank === 2 ? '🥈 2nd' : '🥉 3rd'} Place Bonus!` : '🎉 Submission Reward Earned!',
-    message: `You earned ${totalCoins} coins (${baseCoins} base${bonusCoins ? ` + ${bonusCoins} bonus` : ''}) for submitting "${task.title}".`,
-    type: 'reward_earned',
-    link: `/tasks/${task._id}`,
-  });
-
-  // 7. Check and trigger achievements
-  await checkAndAwardAchievements(student._id, {
-    bonusRank,
-    streak,
-    totalCoins: newBalance,
-    taskCategory: task.category,
-  });
 
   return {
     baseCoins,

@@ -66,4 +66,15 @@ const SubmissionSchema = new Schema<ISubmission>(
 SubmissionSchema.index({ task: 1, student: 1 }, { unique: true });
 SubmissionSchema.index({ task: 1, submittedAt: 1 });
 
+// Partial unique index to strictly guarantee no two students can share early-bird bonus ranks 1, 2, or 3 for the same task
+SubmissionSchema.index(
+  { task: 1, bonusRankAwarded: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      bonusRankAwarded: { $in: [1, 2, 3] },
+    },
+  }
+);
+
 export const Submission = mongoose.model<ISubmission>('Submission', SubmissionSchema);

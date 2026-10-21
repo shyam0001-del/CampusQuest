@@ -1,10 +1,18 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
+
+export type UserRole = 'student' | 'faculty' | 'admin';
+export type ApprovalStatus = 'approved' | 'pending' | 'rejected';
 
 export interface IUser extends Document {
   name: string;
   email: string;
   passwordHash: string;
-  role: 'student' | 'admin';
+  role: UserRole;
+  approvalStatus: ApprovalStatus;
+  facultyDesignation?: string;
+  rejectionReason?: string;
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
   avatar: string;
   rollNumber: string;
   department: string;
@@ -19,6 +27,10 @@ export interface IUser extends Document {
   targetWeeklyTasks: number;
   targetCoinGoal: number;
   isDemoUser: boolean;
+  isActive: boolean;
+  deactivatedAt?: Date;
+  deactivatedBy?: Types.ObjectId;
+  deactivationReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,7 +40,22 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['student', 'admin'], default: 'student', index: true },
+    role: {
+      type: String,
+      enum: ['student', 'faculty', 'admin'],
+      default: 'student',
+      index: true,
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['approved', 'pending', 'rejected'],
+      default: 'approved',
+      index: true,
+    },
+    facultyDesignation: { type: String, default: '', trim: true },
+    rejectionReason: { type: String, default: '', trim: true },
+    approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    approvedAt: { type: Date },
     avatar: { type: String, default: '' },
     rollNumber: { type: String, default: '', trim: true },
     department: { type: String, default: 'Computer Science & Engineering', trim: true },
@@ -43,6 +70,10 @@ const UserSchema = new Schema<IUser>(
     targetWeeklyTasks: { type: Number, default: 5 },
     targetCoinGoal: { type: Number, default: 500 },
     isDemoUser: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true, index: true },
+    deactivatedAt: { type: Date },
+    deactivatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    deactivationReason: { type: String, default: '' },
   },
   {
     timestamps: true,

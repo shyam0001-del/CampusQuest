@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { Task } from '../models/Task';
 import { Subject } from '../models/Subject';
 import { Submission } from '../models/Submission';
@@ -6,6 +7,8 @@ import { User } from '../models/User';
 import { Notification } from '../models/Notification';
 import { AuditLog } from '../models/AuditLog';
 import { AuthRequest } from '../middleware/authMiddleware';
+
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const getTasks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -156,22 +159,73 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
       status = 'published',
     } = req.body;
 
-    if (!title || !subject || !deadline) {
+    const subjectInput = typeof subject === 'string' ? subject.trim() : '';
+
+    if (!title || !subjectInput || !deadline) {
       res.status(400).json({ success: false, message: 'Title, Subject, and Deadline are required' });
       return;
     }
 
-    const subjectObj = await Subject.findById(subject);
+    let subjectObj = null;
+
+    // 1. Try finding by ObjectId if a valid ID was passed
+    if (mongoose.isValidObjectId(subjectInput)) {
+      subjectObj = await Subject.findById(subjectInput);
+    }
+
+    // 2. Try finding by case-insensitive name or code
     if (!subjectObj) {
-      res.status(404).json({ success: false, message: 'Subject not found' });
-      return;
+      subjectObj = await Subject.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${escapeRegex(subjectInput)}$`, 'i') } },
+          { code: subjectInput.toUpperCase() },
+        ],
+      });
+    }
+
+    // 3. If subject does not exist, automatically create it so faculty/admin can type any subject!
+    if (!subjectObj) {
+      const words = subjectInput.split(/[\s-]+/).filter(Boolean);
+      let autoCode = words.length > 1
+        ? words.map((w: string) => w[0].toUpperCase()).join('').slice(0, 6)
+        : subjectInput.slice(0, 4).toUpperCase();
+
+      const existingWithCode = await Subject.findOne({ code: autoCode });
+      if (existingWithCode) {
+        autoCode = `${autoCode}-${Math.floor(100 + Math.random() * 900)}`;
+      }
+
+      // Automatically enroll all existing students
+      const allStudents = await User.find({ role: 'student' }).select('_id');
+      const studentIds = allStudents.map((s) => s._id);
+
+      subjectObj = await Subject.create({
+        name: subjectInput,
+        code: autoCode || 'COURSE',
+        description: `Coursework module for ${subjectInput}`,
+        semester: 'Semester V',
+        academicYear: '2026-2027',
+        facultyName: req.user?.name || 'Faculty In-Charge',
+        color: '#8b5cf6',
+        icon: 'BookOpen',
+        enrolledStudents: studentIds,
+        createdBy: req.user!._id,
+      });
+
+      await AuditLog.create({
+        action: 'CREATE_SUBJECT',
+        performedBy: req.user!._id,
+        targetType: 'Subject',
+        targetId: subjectObj._id.toString(),
+        details: { name: subjectObj.name, code: subjectObj.code, source: 'task_publishing_auto_created' },
+      });
     }
 
     const task = await Task.create({
-      title,
-      description: description || '',
-      instructions: instructions || '',
-      subject,
+      title: title.trim(),
+      description: description ? description.trim() : '',
+      instructions: instructions ? instructions.trim() : '',
+      subject: subjectObj._id,
       category,
       deadline: new Date(deadline),
       maxBasePoints: Number(maxBasePoints),
@@ -222,15 +276,43 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
     const { id } = req.params;
     const updates = req.body;
 
-    if (updates.deadline) {
-      updates.deadline = new Date(updates.deadline);
-    }
-
-    const task = await Task.findByIdAndUpdate(id, updates, { new: true });
+    const task = await Task.findById(id);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
+
+    // SCOPE CHECK: Admins can update any task; faculty can only update tasks they created
+    if (req.user?.role !== 'admin' && task.createdBy.toString() !== req.user?._id.toString()) {
+      res.status(403).json({ success: false, message: 'Access denied: You can only modify tasks published by your faculty account' });
+      return;
+    }
+
+    if (updates.deadline) {
+      updates.deadline = new Date(updates.deadline);
+    }
+
+    if (updates.subject) {
+      const subInput = typeof updates.subject === 'string' ? updates.subject.trim() : '';
+      let subObj = null;
+      if (mongoose.isValidObjectId(subInput)) {
+        subObj = await Subject.findById(subInput);
+      }
+      if (!subObj) {
+        subObj = await Subject.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${escapeRegex(subInput)}$`, 'i') } },
+            { code: subInput.toUpperCase() },
+          ],
+        });
+      }
+      if (subObj) {
+        updates.subject = subObj._id;
+      }
+    }
+
+    Object.assign(task, updates);
+    await task.save();
 
     await AuditLog.create({
       action: 'UPDATE_TASK',
@@ -249,11 +331,19 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
 export const deleteTask = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const task = await Task.findByIdAndDelete(id);
+    const task = await Task.findById(id);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
+
+    // SCOPE CHECK: Admins can delete any task; faculty can only delete tasks they created
+    if (req.user?.role !== 'admin' && task.createdBy.toString() !== req.user?._id.toString()) {
+      res.status(403).json({ success: false, message: 'Access denied: You can only delete tasks published by your faculty account' });
+      return;
+    }
+
+    await Task.findByIdAndDelete(id);
 
     // Also remove associated submissions
     await Submission.deleteMany({ task: id });

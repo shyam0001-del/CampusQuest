@@ -87,7 +87,7 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-md rounded-3xl bg-gradient-to-b from-[#131b2e] to-[#0c101d] border border-violet-500/30 p-6 sm:p-8 shadow-2xl z-10 text-center animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md rounded-3xl bg-[#111726] border border-white/10 p-6 sm:p-8 shadow-2xl z-10 text-center animate-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/5 transition"

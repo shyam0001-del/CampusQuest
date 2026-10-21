@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -10,11 +10,13 @@ import {
   User,
   ShieldAlert,
   Sparkles,
+  UserCog,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const Sidebar: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -27,7 +29,10 @@ export const Sidebar: React.FC = () => {
   ];
 
   if (user?.role === 'admin') {
-    navItems.push({ label: 'Admin Panel', path: '/admin', icon: ShieldAlert, badge: 'Staff' });
+    navItems.push({ label: 'Admin Panel', path: '/admin', icon: ShieldAlert, badge: 'Admin' });
+    navItems.push({ label: 'User Management', path: '/admin?tab=users', icon: UserCog, badge: 'Users' });
+  } else if (user?.role === 'faculty') {
+    navItems.push({ label: 'Faculty Hub', path: '/admin', icon: ShieldAlert, badge: 'Faculty' });
   }
 
   // Level XP progress math
@@ -40,6 +45,14 @@ export const Sidebar: React.FC = () => {
     Math.max(0, Math.round(((currentXP - prevLevelXP) / (nextLevelXP - prevLevelXP || 1)) * 100))
   );
 
+  const isItemActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    if (path.includes('?')) {
+      return `${location.pathname}${location.search}` === path;
+    }
+    return location.pathname === path && (!location.search || location.search === '?tab=tasks');
+  };
+
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-white/[0.08] bg-[#0c101d]/60 backdrop-blur-md p-4 min-h-[calc(100vh-4rem)] justify-between">
       {/* Navigation Links */}
@@ -47,50 +60,46 @@ export const Sidebar: React.FC = () => {
         <div className="px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
           Quest Hub
         </div>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/'}
-            className={({ isActive }) =>
-              `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
-                isActive
+        {navItems.map((item) => {
+          const active = isItemActive(item.path);
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/'}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
+                active
                   ? 'bg-gradient-to-r from-violet-600/20 to-cyan-500/10 text-white border border-violet-500/30 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <div className="flex items-center gap-3">
-                  <item.icon
-                    className={`w-4 h-4 transition-colors ${
-                      isActive ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'
-                    }`}
-                  />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span
-                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                      item.badge === 'Live'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
-                        : 'bg-violet-500/20 text-violet-300'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <item.icon
+                  className={`w-4 h-4 transition-colors ${
+                    active ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'
+                  }`}
+                />
+                <span>{item.label}</span>
+              </div>
+              {item.badge && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    item.badge === 'Live'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+                      : 'bg-violet-500/20 text-violet-300'
+                  }`}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </NavLink>
+          );
+        })}
       </div>
 
       {/* Gamification Level Card at bottom */}
       {user && user.role === 'student' && (
-        <div className="mt-6 p-3.5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-white/10 shadow-lg relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-violet-600/10 rounded-full blur-xl pointer-events-none" />
+        <div className="mt-6 p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 shadow-lg relative overflow-hidden group">
 
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">

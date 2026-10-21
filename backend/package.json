@@ -7,7 +7,17 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "seed": "ts-node src/scripts/seed.ts"
+    "seed": "ts-node src/scripts/seed.ts",
+    "bootstrap:admin": "ts-node src/scripts/bootstrapAdmin.ts",
+    "recover:admin": "ts-node src/scripts/recoverAdmin.ts",
+    "test:security": "ts-node src/scripts/testAuthSecurity.ts",
+    "test:concurrency": "ts-node src/scripts/testSubmissionConcurrency.ts",
+    "test:removal": "ts-node src/scripts/testStudentRemoval.ts",
+    "test:indexes": "ts-node src/scripts/testIndexProvisioning.ts",
+    "test:proxy": "ts-node src/scripts/testProxyTrust.ts",
+    "test:upload": "ts-node src/scripts/testUploadBehavior.ts",
+    "test:smoke": "ts-node src/scripts/stagingSmokeTest.ts",
+    "test:analytics": "ts-node src/scripts/testAnalyticsAndMetrics.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

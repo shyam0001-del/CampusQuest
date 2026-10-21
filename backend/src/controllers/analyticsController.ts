@@ -9,9 +9,40 @@ import { AuthRequest } from '../middleware/authMiddleware';
 
 export const getDashboardStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
     const now = new Date();
-    const isStudent = req.user?.role === 'student';
-    const userId = req.user?._id;
+    const isStudent = req.user.role === 'student';
+    const isFacultyOrAdmin =
+      req.user.role === 'admin' ||
+      (req.user.role === 'faculty' && req.user.approvalStatus === 'approved');
+
+    if (!isStudent && !isFacultyOrAdmin) {
+      res.status(403).json({
+        success: false,
+        message: 'Forbidden: Account approval required to access faculty analytics',
+      });
+      return;
+    }
+
+    const userId = req.user._id;
+
+    // Validate days parameter: must be strictly 7, 14, or 30 if provided
+    let numDays = 7;
+    if (req.query.days !== undefined) {
+      const parsed = parseInt(req.query.days as string, 10);
+      if (![7, 14, 30].includes(parsed)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid date range: days must be exactly 7, 14, or 30',
+        });
+        return;
+      }
+      numDays = parsed;
+    }
 
     // 1. Tasks Counts
     const totalTasks = await Task.countDocuments({ status: 'published' });
@@ -21,9 +52,9 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
     let completedSubmissions = 0;
     let pendingTasks = 0;
     let overdueTasks = 0;
-    let myCoins = req.user?.coins || 0;
-    let myPoints = req.user?.points || 0;
-    let myStreak = req.user?.streak || 0;
+    let myCoins = req.user.coins || 0;
+    let myPoints = req.user.points || 0;
+    let myStreak = req.user.streak || 0;
     let myRank = 1;
 
     // Submissions for student
@@ -54,7 +85,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       });
       myRank = higherRanked + 1;
     } else {
-      // Admin overall counts
+      // Admin/Faculty overall counts
       completedSubmissions = await Submission.countDocuments();
       const publishedTasks = await Task.find({ status: 'published' });
       overdueTasks = publishedTasks.filter((t) => new Date(t.deadline) < now).length;
@@ -108,19 +139,28 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       })
     );
 
-    // 4. Weekly Activity (last 7 days submission volume)
-    const sevenDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    // 4. Activity Volume (strictly 7, 14, or 30 days)
+    // Earned coin types: excludes spent coins, penalties, reversals, or unrelated admin adjustments
+    const EARNED_COIN_TYPES = ['base_reward', 'early_bird_bonus', 'streak_reward', 'achievement_reward'];
 
-    const activityData: { day: string; submissions: number; coins: number }[] = [];
+    const startDate = new Date(now.getTime() - (numDays - 1) * 24 * 60 * 60 * 1000);
+    startDate.setHours(0, 0, 0, 0);
+
+    const activityData: { day: string; date: string; submissions: number; coins: number }[] = [];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(sevenDaysAgo.getTime() + i * 24 * 60 * 60 * 1000);
+    for (let i = 0; i < numDays; i++) {
+      const d = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+      d.setHours(0, 0, 0, 0);
       const nextD = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+      nextD.setHours(0, 0, 0, 0);
 
       const subFilter: any = { submittedAt: { $gte: d, $lt: nextD } };
-      const coinFilter: any = { createdAt: { $gte: d, $lt: nextD } };
+      const coinFilter: any = {
+        createdAt: { $gte: d, $lt: nextD },
+        type: { $in: EARNED_COIN_TYPES },
+        amount: { $gt: 0 },
+      };
 
       if (isStudent && userId) {
         subFilter.student = userId;
@@ -129,10 +169,15 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
 
       const daySubs = await Submission.countDocuments(subFilter);
       const dayCoinTx = await CoinTransaction.find(coinFilter);
-      const dayCoins = dayCoinTx.reduce((sum, tx) => sum + tx.amount, 0);
+      const dayCoins = dayCoinTx.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+      const month = d.getMonth() + 1;
+      const dateNum = d.getDate();
+      const label = numDays > 7 ? `${month}/${dateNum}` : dayNames[d.getDay()];
 
       activityData.push({
-        day: dayNames[d.getDay()],
+        day: label,
+        date: `${d.getFullYear()}-${String(month).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`,
         submissions: daySubs,
         coins: dayCoins,
       });

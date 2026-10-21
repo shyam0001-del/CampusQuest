@@ -67,7 +67,11 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
-  delete: <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
+  delete: <T>(endpoint: string, body?: any) =>
+    request<T>(endpoint, {
+      method: 'DELETE',
+      body: body ? JSON.stringify(body) : undefined,
+    }),
   upload: <T>(endpoint: string, formData: FormData) =>
     request<T>(endpoint, {
       method: 'POST',

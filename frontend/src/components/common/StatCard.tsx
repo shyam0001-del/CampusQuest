@@ -16,53 +16,28 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtext,
   gradient = 'violet',
 }) => {
-  const gradients = {
-    violet: {
-      bg: 'from-violet-500/10 to-purple-500/5',
-      border: 'border-violet-500/20 hover:border-violet-500/40',
-      iconBg: 'bg-violet-500/20 text-violet-400',
-      glow: 'group-hover:shadow-glow-violet',
-    },
-    cyan: {
-      bg: 'from-cyan-500/10 to-blue-500/5',
-      border: 'border-cyan-500/20 hover:border-cyan-500/40',
-      iconBg: 'bg-cyan-500/20 text-cyan-400',
-      glow: 'group-hover:shadow-glow-cyan',
-    },
-    gold: {
-      bg: 'from-amber-500/10 to-yellow-500/5',
-      border: 'border-amber-500/20 hover:border-amber-500/40',
-      iconBg: 'bg-amber-500/20 text-amber-400',
-      glow: 'group-hover:shadow-glow-gold',
-    },
-    coral: {
-      bg: 'from-rose-500/10 to-pink-500/5',
-      border: 'border-rose-500/20 hover:border-rose-500/40',
-      iconBg: 'bg-rose-500/20 text-rose-400',
-      glow: 'group-hover:shadow-glow-coral',
-    },
-    emerald: {
-      bg: 'from-emerald-500/10 to-teal-500/5',
-      border: 'border-emerald-500/20 hover:border-emerald-500/40',
-      iconBg: 'bg-emerald-500/20 text-emerald-400',
-      glow: 'group-hover:shadow-emerald',
-    },
+  const iconAccents = {
+    violet: 'bg-violet-500/15 text-violet-400',
+    cyan: 'bg-cyan-500/15 text-cyan-400',
+    gold: 'bg-amber-500/15 text-amber-400',
+    coral: 'bg-rose-500/15 text-rose-400',
+    emerald: 'bg-emerald-500/15 text-emerald-400',
   };
 
-  const style = gradients[gradient];
+  const iconStyle = iconAccents[gradient] || iconAccents.violet;
 
   return (
     <div
-      className={`group relative p-5 rounded-2xl bg-gradient-to-br ${style.bg} border ${style.border} transition-all duration-300 hover:-translate-y-1 ${style.glow}`}
+      className="group relative p-3.5 sm:p-5 rounded-2xl bg-[#111726] border border-white/10 transition-all duration-300 hover:-translate-y-1 shadow-sm"
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-slate-400 tracking-wide uppercase">{label}</p>
-          <p className="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">{value}</p>
-          {subtext && <p className="text-[11px] text-slate-400 mt-1 font-medium">{subtext}</p>}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs font-semibold text-slate-400 tracking-wide uppercase truncate">{label}</p>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white mt-0.5 sm:mt-1 tracking-tight truncate">{value}</p>
+          {subtext && <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 font-medium truncate">{subtext}</p>}
         </div>
-        <div className={`w-12 h-12 rounded-2xl ${style.iconBg} flex items-center justify-center shrink-0`}>
-          <Icon className="w-6 h-6" />
+        <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${iconStyle} flex items-center justify-center shrink-0`}>
+          <Icon className="w-4 h-4 sm:w-6 sm:h-6" />
         </div>
       </div>
     </div>

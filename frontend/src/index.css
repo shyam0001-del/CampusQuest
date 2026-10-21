@@ -2,21 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 10 13 23;
-    --foreground: 248 250 252;
-  }
+/* ==========================================================================
+   CampusQuest Standardized 3-Theme Design System
+   ========================================================================== */
 
+/* 1. DEFAULT THEME: Main #F3F4F6, Cards #FFFFFF, Primary #111827, Secondary #4B5563, Borders #D1D5DB, Inputs #FFFFFF */
+:root,
+[data-theme="default"],
+.theme-default {
+  --bg-main: #F3F4F6;
+  --bg-card: #FFFFFF;
+  --bg-card-sub: #F9FAFB;
+  --bg-nav: rgba(255, 255, 255, 0.95);
+  --bg-sidebar: #FFFFFF;
+  --bg-input: #FFFFFF;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+  --border-color: #D1D5DB;
+  --border-subtle: #E5E7EB;
+  --hover-bg: #F3F4F6;
+  --selected-bg: #E5E7EB;
+  --focus-ring: #9CA3AF;
+  --input-placeholder: #9CA3AF;
+
+  /* Chart Colors */
+  --chart-bar-submissions: #8B5CF6;
+  --chart-bar-coins: #F59E0B;
+  --chart-grid: #E5E7EB;
+  --chart-axis: #4B5563;
+  --chart-tooltip-bg: #FFFFFF;
+  --chart-tooltip-border: #D1D5DB;
+  --chart-tooltip-text: #111827;
+
+  /* Modal Backdrop */
+  --modal-backdrop: rgba(17, 24, 39, 0.5);
+}
+
+/* 2. WHITE THEME: Main #FFFFFF, Cards #FFFFFF, Primary #111111, Secondary #555555, Borders #D4D4D4, Inputs #FFFFFF */
+[data-theme="white"],
+.theme-white {
+  --bg-main: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-sub: #F9FAFB;
+  --bg-nav: rgba(255, 255, 255, 0.98);
+  --bg-sidebar: #FFFFFF;
+  --bg-input: #FFFFFF;
+  --text-primary: #111111;
+  --text-secondary: #555555;
+  --text-muted: #777777;
+  --border-color: #D4D4D4;
+  --border-subtle: #E5E7EB;
+  --hover-bg: #F3F4F6;
+  --selected-bg: #E5E7EB;
+  --focus-ring: #9CA3AF;
+  --input-placeholder: #888888;
+
+  /* Chart Colors */
+  --chart-bar-submissions: #6366F1;
+  --chart-bar-coins: #D97706;
+  --chart-grid: #E5E7EB;
+  --chart-axis: #555555;
+  --chart-tooltip-bg: #FFFFFF;
+  --chart-tooltip-border: #D4D4D4;
+  --chart-tooltip-text: #111111;
+
+  /* Modal Backdrop */
+  --modal-backdrop: rgba(0, 0, 0, 0.45);
+}
+
+/* 3. BLACK THEME: Main #000000, Cards #171717, Primary #FFFFFF, Secondary #D4D4D4, Borders #404040, Inputs #111111 */
+[data-theme="black"],
+.theme-black {
+  --bg-main: #000000;
+  --bg-card: #171717;
+  --bg-card-sub: #222222;
+  --bg-nav: rgba(23, 23, 23, 0.95);
+  --bg-sidebar: #171717;
+  --bg-input: #111111;
+  --text-primary: #FFFFFF;
+  --text-secondary: #D4D4D4;
+  --text-muted: #A3A3A3;
+  --border-color: #404040;
+  --border-subtle: #2E2E2E;
+  --hover-bg: #262626;
+  --selected-bg: #333333;
+  --focus-ring: #737373;
+  --input-placeholder: #737373;
+
+  /* Chart Colors */
+  --chart-bar-submissions: #A78BFA;
+  --chart-bar-coins: #FBBF24;
+  --chart-grid: #2E2E2E;
+  --chart-axis: #D4D4D4;
+  --chart-tooltip-bg: #171717;
+  --chart-tooltip-border: #404040;
+  --chart-tooltip-text: #FFFFFF;
+
+  /* Modal Backdrop */
+  --modal-backdrop: rgba(0, 0, 0, 0.85);
+}
+
+@layer base {
   body {
-    background-color: #0a0d17;
-    color: #f8fafc;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
+    background-image: none !important;
+    min-height: 100vh;
   }
 }
 
-/* Custom sleek scrollbars */
+/* Sleek Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -27,51 +125,159 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--border-color);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.4);
+  background: var(--text-muted);
 }
 
-/* Light mode overrides */
-html:not(.dark) {
-  background-color: #f8fafc;
-  color: #0f172a;
+/* ==========================================================================
+   Comprehensive Theme Utility Mappings
+   ========================================================================== */
+
+/* 1. Main Backgrounds & Root Canvas */
+.bg-\[\#0a0d17\],
+.bg-\[\#070a13\],
+.bg-\[\#0d121f\],
+.bg-slate-950,
+.bg-slate-950\/90 {
+  background-color: var(--bg-main) !important;
 }
 
-html:not(.dark) body {
-  background-color: #f1f5f9;
-  color: #0f172a;
+/* 2. Card Surfaces, Modals, Panels & Dropdowns */
+.bg-\[\#111726\],
+.bg-\[\#0c101d\],
+.bg-slate-900,
+.bg-slate-900\/90,
+.bg-slate-900\/85 {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
 }
 
-html:not(.dark) .bg-\[\#0a0d17\] {
-  background-color: #f8fafc !important;
+/* 3. Sub-panels, Table Headers, Metric Sub-containers */
+.bg-slate-900\/80,
+.bg-slate-900\/60,
+.bg-slate-900\/50,
+.bg-slate-900\/40,
+.bg-slate-800,
+.bg-slate-800\/60,
+.bg-slate-800\/80,
+.bg-slate-800\/90 {
+  background-color: var(--bg-card-sub) !important;
+  border-color: var(--border-subtle) !important;
 }
 
-html:not(.dark) .bg-\[\#111726\] {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  color: #0f172a !important;
+/* 4. Navbar & Sidebar */
+header,
+header.bg-\[\#0a0d17\]\/85,
+header.bg-\[\#0c101d\]\/80 {
+  background-color: var(--bg-nav) !important;
+  border-color: var(--border-color) !important;
 }
 
-html:not(.dark) .bg-slate-900 {
-  background-color: #f1f5f9 !important;
+aside,
+aside.bg-\[\#0c101d\]\/60 {
+  background-color: var(--bg-sidebar) !important;
+  border-color: var(--border-color) !important;
 }
 
-html:not(.dark) .text-white {
-  color: #0f172a !important;
+/* 5. Borders & Dividers */
+.border-white\/10,
+.border-white\/5,
+.border-white\/\[0\.08\],
+.border-white\/20,
+.border-white\/30,
+.border-slate-800,
+.border-slate-700,
+.border-slate-600 {
+  border-color: var(--border-color) !important;
 }
 
-html:not(.dark) .text-slate-200 {
-  color: #1e293b !important;
+.divide-white\/5,
+.divide-white\/10,
+.divide-slate-800,
+.divide-slate-700 {
+  border-color: var(--border-subtle) !important;
 }
 
-html:not(.dark) .text-slate-300 {
-  color: #334155 !important;
+/* 6. Typography */
+.text-white,
+.text-slate-100 {
+  color: var(--text-primary) !important;
 }
 
-html:not(.dark) .text-slate-400 {
-  color: #64748b !important;
+.text-slate-200,
+.text-slate-300 {
+  color: var(--text-secondary) !important;
+}
+
+.text-slate-400,
+.text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+/* 7. Forms, Inputs & Placeholders */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--focus-ring) !important;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder) !important;
+}
+
+select option {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 8. Table Styling */
+thead,
+thead.bg-slate-900\/90 {
+  background-color: var(--bg-card-sub) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+tbody tr {
+  border-color: var(--border-subtle) !important;
+}
+
+tbody tr:hover {
+  background-color: var(--hover-bg) !important;
+}
+
+/* 9. Hover & Active States */
+.hover\:bg-white\/5:hover,
+.hover\:bg-white\/10:hover,
+.hover\:bg-slate-800:hover,
+.hover\:bg-slate-700:hover {
+  background-color: var(--hover-bg) !important;
+}
+
+/* 10. Modal Backdrops */
+.bg-black\/80,
+.bg-black\/75 {
+  background-color: var(--modal-backdrop) !important;
+}
+
+/* 11. Custom Focus Visible Ring */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

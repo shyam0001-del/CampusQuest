@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Calendar, AlertCircle, Award } from 'lucide-react';
+import { X, Calendar, AlertCircle, Award } from 'lucide-react';
 import { Subject, TaskCategory } from '../../types';
 import { api } from '../../lib/api';
 
@@ -8,6 +8,7 @@ interface CreateTaskModalProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultSubjectId?: string;
+  defaultSubjectName?: string;
 }
 
 export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
@@ -15,12 +16,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onClose,
   onSuccess,
   defaultSubjectId,
+  defaultSubjectName,
 }) => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [subjectId, setSubjectId] = useState(defaultSubjectId || '');
+  const [subject, setSubject] = useState(defaultSubjectName || '');
   const [category, setCategory] = useState<TaskCategory>('assignment');
   const [deadlineDate, setDeadlineDate] = useState('');
   const [deadlineTime, setDeadlineTime] = useState('23:59');
@@ -36,23 +38,34 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchSubjects();
+      if (defaultSubjectName) {
+        setSubject(defaultSubjectName);
+      }
       // Default deadline to 7 days from now
       const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       setDeadlineDate(in7Days.toISOString().split('T')[0]);
+    } else {
+      // Clear form when closed
+      setTitle('');
+      setDescription('');
+      setInstructions('');
+      if (!defaultSubjectName) setSubject('');
+      setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultSubjectName]);
 
   const fetchSubjects = async () => {
     try {
       const res = await api.get<{ success: boolean; subjects: Subject[] }>('/subjects');
-      if (res.success) {
+      if (res.success && Array.isArray(res.subjects)) {
         setSubjects(res.subjects);
-        if (!subjectId && res.subjects.length > 0) {
-          setSubjectId(defaultSubjectId || res.subjects[0]._id);
+        if (defaultSubjectId && !defaultSubjectName) {
+          const found = res.subjects.find((s) => s._id === defaultSubjectId);
+          if (found) setSubject(found.name);
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error loading subjects:', err);
     }
   };
 
@@ -62,8 +75,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!title.trim() || !subjectId || !deadlineDate) {
-      setError('Title, Subject, and Deadline date are required');
+    const trimmedTitle = title.trim();
+    const trimmedSubject = subject.trim();
+
+    if (!trimmedTitle || !trimmedSubject || !deadlineDate) {
+      setError('Task Title, Subject, and Deadline date are required');
       return;
     }
 
@@ -73,10 +89,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       const deadlineIso = new Date(`${deadlineDate}T${deadlineTime || '23:59'}:00`).toISOString();
 
       await api.post('/tasks', {
-        title: title.trim(),
+        title: trimmedTitle,
         description: description.trim(),
         instructions: instructions.trim(),
-        subject: subjectId,
+        subject: trimmedSubject,
         category,
         deadline: deadlineIso,
         maxBasePoints: Number(maxBasePoints),
@@ -100,7 +116,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
@@ -108,10 +124,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-xl rounded-3xl bg-[#111726] border border-white/10 p-6 sm:p-8 shadow-2xl z-10 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-xl rounded-3xl bg-[#111726] border border-white/10 p-4 sm:p-8 shadow-2xl z-10 max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/5 transition"
+          aria-label="Close modal"
+          className="absolute top-4 sm:top-5 right-4 sm:right-5 p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/5 transition min-h-[38px] min-w-[38px] flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
@@ -154,21 +171,28 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {/* Subject & Category Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Subject (Editable Text Input with Suggestions) */}
             <div className="space-y-1">
               <label className="font-semibold text-slate-300">Subject *</label>
-              <select
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-sm text-slate-200 focus:outline-none focus:border-violet-500"
-              >
+              <input
+                type="text"
+                required
+                list="subject-options"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g. Operating Systems, DBMS, Networks"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500"
+              />
+              <datalist id="subject-options">
                 {subjects.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.code}: {s.name}
+                  <option key={s._id} value={s.name}>
+                    {s.code ? `${s.code}: ` : ''}{s.name}
                   </option>
                 ))}
-              </select>
+              </datalist>
             </div>
 
+            {/* Task Category Dropdown (Preserved) */}
             <div className="space-y-1">
               <label className="font-semibold text-slate-300">Task Category *</label>
               <select
@@ -221,81 +245,102 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Gamified Reward Settings */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/20 space-y-3">
-            <div className="flex items-center gap-2">
+          {/* Gamified Coins & Bonus Rewards Section */}
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
               <Award className="w-4 h-4 text-amber-400" />
-              <span className="font-bold text-amber-300">Points & Early Bird Bonus Economy</span>
+              <span>Base Coin Reward & Early Bird Podium Bonuses</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div>
-                <label className="text-[10px] text-slate-400 font-medium">Base Points</label>
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-400">Base Reward</label>
                 <input
                   type="number"
+                  min={10}
+                  max={500}
                   value={maxBasePoints}
                   onChange={(e) => setMaxBasePoints(Number(e.target.value))}
-                  className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-white/10 text-slate-200 font-semibold text-center"
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-xs text-white"
                 />
               </div>
-              <div>
-                <label className="text-[10px] text-amber-400 font-medium">🥇 1st Bonus</label>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-amber-400 font-semibold">🥇 1st Bonus</label>
                 <input
                   type="number"
+                  min={0}
+                  max={200}
                   value={firstBonus}
                   onChange={(e) => setFirstBonus(Number(e.target.value))}
-                  className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-amber-500/30 text-amber-300 font-semibold text-center"
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-amber-500/30 text-xs text-amber-300"
                 />
               </div>
-              <div>
-                <label className="text-[10px] text-slate-300 font-medium">🥈 2nd Bonus</label>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-300 font-semibold">🥈 2nd Bonus</label>
                 <input
                   type="number"
+                  min={0}
+                  max={150}
                   value={secondBonus}
                   onChange={(e) => setSecondBonus(Number(e.target.value))}
-                  className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-white/10 text-slate-200 font-semibold text-center"
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-white/20 text-xs text-slate-300"
                 />
               </div>
-              <div>
-                <label className="text-[10px] text-amber-600 font-medium">🥉 3rd Bonus</label>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-amber-600 font-semibold">🥉 3rd Bonus</label>
                 <input
                   type="number"
+                  min={0}
+                  max={100}
                   value={thirdBonus}
                   onChange={(e) => setThirdBonus(Number(e.target.value))}
-                  className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-white/10 text-amber-500 font-semibold text-center"
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-amber-700/30 text-xs text-amber-500"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Resubmission checkbox */}
+          <div className="flex items-center gap-2 pt-1">
             <input
               type="checkbox"
-              id="resubCheck"
+              id="resubmission"
               checked={allowResubmission}
               onChange={(e) => setAllowResubmission(e.target.checked)}
-              className="w-4 h-4 rounded text-violet-600 bg-slate-900 border-white/20 focus:ring-0"
+              className="w-4 h-4 rounded border-slate-700 text-violet-600 focus:ring-violet-500 bg-slate-900"
             />
-            <label htmlFor="resubCheck" className="text-slate-300 select-none cursor-pointer">
-              Allow students to update or resubmit their work before the deadline
+            <label htmlFor="resubmission" className="text-xs text-slate-300 select-none">
+              Allow students to resubmit improved work before the deadline
             </label>
           </div>
 
-          {/* Action button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 text-white shadow-glow-violet hover:opacity-95 disabled:opacity-50 transition flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <Plus className="w-4 h-4" />
-                <span>Publish Task & Notify Students</span>
-              </>
-            )}
-          </button>
+          {/* Actions */}
+          <div className="pt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-xl font-semibold text-xs text-slate-400 hover:text-white hover:bg-white/5 transition text-center"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-glow-violet hover:opacity-95 disabled:opacity-50 transition flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Calendar className="w-4 h-4" />
+                  <span>Publish Quest & Task</span>
+                </>
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>

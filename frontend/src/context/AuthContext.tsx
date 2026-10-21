@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
-  demoLogin: (role: 'student' | 'admin') => Promise<void>;
+  demoLogin: (role: 'student' | 'admin' | 'faculty') => Promise<void>;
   logout: () => void;
   updateUser: (updatedUser: Partial<User>) => void;
   refreshUser: () => Promise<void>;
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const demoLogin = async (role: 'student' | 'admin') => {
+  const demoLogin = async (role: 'student' | 'faculty' | 'admin') => {
     const res = await api.post<{ success: boolean; token: string; user: User }>('/auth/demo-login', {
       role,
     });

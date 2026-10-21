@@ -8,16 +8,16 @@ import {
   getTaskRoster,
   exportRosterCSV,
 } from '../controllers/taskController';
-import { protect, adminOnly, optionalAuth } from '../middleware/authMiddleware';
+import { protect, facultyOrAdmin, optionalAuth } from '../middleware/authMiddleware';
 
 const router = Router();
 
 router.get('/', optionalAuth, getTasks);
 router.get('/:id', optionalAuth, getTaskById);
-router.get('/:id/roster', protect, adminOnly, getTaskRoster);
-router.get('/:id/export-csv', protect, adminOnly, exportRosterCSV);
-router.post('/', protect, adminOnly, createTask);
-router.put('/:id', protect, adminOnly, updateTask);
-router.delete('/:id', protect, adminOnly, deleteTask);
+router.get('/:id/roster', protect, facultyOrAdmin, getTaskRoster);
+router.get('/:id/export-csv', protect, facultyOrAdmin, exportRosterCSV);
+router.post('/', protect, facultyOrAdmin, createTask);
+router.put('/:id', protect, facultyOrAdmin, updateTask);
+router.delete('/:id', protect, facultyOrAdmin, deleteTask);
 
 export default router;

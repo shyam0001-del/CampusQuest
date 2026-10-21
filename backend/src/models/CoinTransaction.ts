@@ -38,4 +38,16 @@ const CoinTransactionSchema = new Schema<ICoinTransaction>(
 
 CoinTransactionSchema.index({ student: 1, createdAt: -1 });
 
+// Partial unique index to strictly prevent duplicate base or early-bird rewards per student per task
+CoinTransactionSchema.index(
+  { student: 1, task: 1, type: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      task: { $exists: true },
+      type: { $in: ['base_reward', 'early_bird_bonus'] },
+    },
+  }
+);
+
 export const CoinTransaction = mongoose.model<ICoinTransaction>('CoinTransaction', CoinTransactionSchema);
